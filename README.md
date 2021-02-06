@@ -29,6 +29,9 @@ issue = repo.create_issue(title="Can you create issues with this?",
 # comment issue
 issue.comment("Cool!")
 
+# add collaborator to repository
+repo.add_collaborator("your-collaborator-username-here")
+
 # uncomment to delete local repository
 # repo.delete()
 ```

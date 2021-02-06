@@ -1,8 +1,8 @@
 # PythonGithubApi
 API to use github CLI (gh) in python applications.
-# Requirements
+## Requirements
 It is necessary to have github CLI installed and set up with your account for this to work.
-# Usage
+## Usage
 The only file you need in order to use the API is `github.py`. `example.py` provides an example use of the API, and `base` folder is used by this example.
 ```python
 from github import Github
@@ -32,5 +32,8 @@ issue.comment("Cool!")
 # uncomment to delete local repository
 # repo.delete()
 ```
-# Notes
+## Notes
 API will not work properly when initialized within a local repository. Please ensure `github.py` is not on the same directory as a `.git` directory.
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)

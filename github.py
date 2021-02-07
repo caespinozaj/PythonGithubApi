@@ -73,19 +73,25 @@ class Repository:
         if link is None and directory is None:
             raise ValueError('Empty link and directory not allowed')
         self.link = link
+        if link is not None:
+            self.repo = self.link[self.link.find("/") + 1:]
         self.directory = directory
         if directory is not None:
-            if not os.path.exists(directory):
-                os.mkdir(directory)
             self.directory = os.path.abspath(directory)
+            if not os.path.exists(directory):
+                self.clone(directory)
             if link is None:
                 self.link = self._get_remote()
-        self.repo = self.link[self.link.find("/") + 1:]
+                self.repo = self.link[self.link.find("/") + 1:]
+
 
     def clone(self, folder):
         if self.directory is None:
             self.directory = os.path.abspath(folder)
-        return run_command(f"gh repo clone {self.repo} {folder}")
+        result = run_command(f"gh repo clone {self.repo} {folder}")
+        if result.returncode == 1:
+            result = run_command(f"gh repo clone git@github.com:{self.repo}.git {folder}")
+            return result
 
     @change_dirs
     def add(self, add_string):
@@ -109,13 +115,21 @@ class Repository:
 
     @change_dirs
     def commit(self, message):
-        run_command(["git", "commit", "-m", message])
+        return run_command(["git", "commit", "-m", message])
 
     @change_dirs
     def push(self):
         result = run_command(f"git push")
         if result.returncode == 128:
-            run_command(f"git push --set-upstream origin master")
+            result = run_command(f"git push --set-upstream origin master")
+            if result.returncode == 128:
+                self.set_url(self.repo)
+                return run_command(f"git push --set-upstream origin master")
+        return result
+
+    @change_dirs
+    def pull(self):
+        return run_command(f"git pull")
 
     @change_dirs
     def status(self):
@@ -124,7 +138,11 @@ class Repository:
 
     @change_dirs
     def checkout(self, commit):
-        run_command(f"git checkout {commit}")
+        return run_command(f"git checkout {commit}")
+
+    @change_dirs
+    def set_url(self, repository):
+        return run_command(["git", "remote", "set-url", "origin", f"git@github.com:{repository}.git"])
 
     def copy_file(self, src, dest):
         """
@@ -187,6 +205,11 @@ class Repository:
         return commit, date_time
 
     @change_dirs
+    def get_commit_date(self, commit):
+        result = run_command(["git", "show", "-s", "--format=%ci", commit])
+        return " ".join(result.stdout.split(" ")[:2])
+
+    @change_dirs
     def _get_remote(self):
         """
         given a local repository, returns the remote
@@ -208,6 +231,9 @@ class Github:
         run_command(f"gh repo create {repository} --{reach} -y")
         repository_name = repository[repository.rfind("/")+1:]
         if directory is not None:
-            os.rename(repository_name, directory)
+            if os.path.exists(repository_name):
+                os.rename(repository_name, directory)
+            else:
+                repository.clone(directory)
             return Repository(directory=directory)
         return Repository(directory=repository_name)

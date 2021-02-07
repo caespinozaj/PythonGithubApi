@@ -36,7 +36,7 @@ repo.add_collaborator("your-collaborator-username-here")
 # repo.delete()
 ```
 ## Notes
-API will not work properly when initialized within a local repository. Please ensure `github.py` is not on the same directory as a `.git` directory.
+`gh CLI` currently does not work properly when ran for git repositories inside other git repositories that have a set remote url. A workaround is implemented for when a unique git repository is nested (with the `disable_dot_git` function wrapper).
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)

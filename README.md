@@ -1,5 +1,5 @@
 # PythonGithubApi
-API to use github CLI (gh) in python applications.
+API to use github CLI (gh) in python applications. This library is still under development.
 ## Requirements
 It is necessary to have github CLI installed and set up with your account for this to work.
 ## Usage

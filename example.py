@@ -4,7 +4,7 @@ from github import Github
 gh = Github()
 
 # create repository 'test' in github and set local directory to 'test-local'.
-repo = gh.create_repository("test-1", directory="test-local")
+repo = gh.create_repository("test", directory="test-local")
 
 # copy all contents from "base" folder into my repository
 repo.copy_root("base")

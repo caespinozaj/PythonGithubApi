@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import pathlib
 import time
 
+
 @dataclass
 class ResponseObject:
     returncode: int
@@ -32,6 +33,7 @@ def change_dirs(fn, *args, **kwargs):
     attribute, executes functions in said directory and
     then exits to previous directory.
     """
+
     def wrapped(self=None, *args, **kwargs):
         cwd = os.path.abspath(os.getcwd())
         os.chdir(self.directory)
@@ -54,31 +56,6 @@ def rename_directory(dir_1, dir_2):
         shutil.rmtree(dir_1)
 
 
-def disable_dot_git(fn, *args, **kwargs):
-    """
-    wrapper function that momentarily disables a .git
-    folder so it can work with git repositories inside
-    other git repositories.
-    """
-    def wrapped(*args, **kwargs):
-        cwd = os.path.abspath(os.getcwd())
-        dot_git = os.path.join(cwd, ".git")
-        dot_underscore_git = os.path.join(cwd, "._git")
-        # change .git to ._git
-        rename_directory(dot_git, dot_underscore_git)
-        try:
-            result = fn(*args, **kwargs)
-            # change ._git to .git
-            rename_directory(dot_underscore_git, dot_git)
-            return result
-        except Exception as e:
-            # if exception is raised, ._git must be renamed
-            # back to .git before raising exception
-            rename_directory(dot_underscore_git, dot_git)
-            raise(e)
-    return wrapped
-
-
 def run_command(command):
     """
     Given a command in str (e.g. "ls -l") or list form (e.g. ["ls, "-l"]), it
@@ -99,7 +76,6 @@ class Issue:
         self.id = id_
         self.directory = directory
 
-    @disable_dot_git
     @change_dirs
     def comment(self, comment):
         return run_command(["gh", "issue", "comment", self.id, "-b", comment])
@@ -125,7 +101,6 @@ class Repository:
                 self.link = self._get_remote()
                 self.repo = self.link[self.link.find("/") + 1:]
 
-    @disable_dot_git
     def clone(self, folder):
         if self.directory is None:
             self.directory = os.path.abspath(folder)
@@ -134,12 +109,10 @@ class Repository:
             result = run_command(f"gh repo clone git@github.com:{self.repo}.git {folder}")
             return result
 
-    @disable_dot_git
     @change_dirs
     def add(self, add_string):
         return run_command(["git", "add", add_string])
 
-    @disable_dot_git
     @change_dirs
     def remove(self, path):
         if os.path.isdir(path):
@@ -147,7 +120,6 @@ class Repository:
         elif os.path.isfile(path):
             os.remove(path)
 
-    @disable_dot_git
     @change_dirs
     def delete_git(self):
         change_permissions(".git")
@@ -157,12 +129,10 @@ class Repository:
         self.delete_git()
         shutil.rmtree(self.directory)
 
-    @disable_dot_git
     @change_dirs
     def commit(self, message):
         return run_command(["git", "commit", "-m", message])
 
-    @disable_dot_git
     @change_dirs
     def push(self):
         result = run_command(f"git push")
@@ -173,18 +143,15 @@ class Repository:
                 return run_command(f"git push --set-upstream origin master")
         return result
 
-    @disable_dot_git
     @change_dirs
     def pull(self):
         return run_command(f"git pull")
 
-    @disable_dot_git
     @change_dirs
     def status(self):
         result = run_command(f"git status")
         return result.stdout
 
-    @disable_dot_git
     @change_dirs
     def checkout(self, commit):
         return run_command(f"git checkout {commit}")
@@ -220,11 +187,10 @@ class Repository:
         """
         for root, _, files in os.walk(src):
             for file in files:
-                src_ = os.path.join(root,file)
-                dest = os.path.join(os.path.relpath(root, src),file)
+                src_ = os.path.join(root, file)
+                dest = os.path.join(os.path.relpath(root, src), file)
                 self.copy_file(src_, dest)
 
-    @disable_dot_git
     @change_dirs
     def create_issue(self, title, body):
         """
@@ -238,7 +204,6 @@ class Repository:
         command = f"gh api -XPUT repos/{self.repo}/collaborators/{user} -f permission=push"
         return run_command(command)
 
-    @disable_dot_git
     @change_dirs
     def get_last_commit(self, start_date, end_date):
         """
@@ -246,7 +211,8 @@ class Repository:
         Returns None, None if not found.
         start_date and end_date format: yyyy-mm-dd HH:MM:SS (e.g. "2000-11-20 13:59:00")
         """
-        command = ["git", "log", "--since", f"\"{start_date}\"", "--until", f"\"{end_date}\"", "-1", "--date=iso", "--pretty=format:\"%H %ad\""]
+        command = ["git", "log", "--since", f"\"{start_date}\"", "--until",
+                   f"\"{end_date}\"", "-1", "--date=iso", "--pretty=format:\"%H %ad\""]
         result = run_command(command)
         output = result.stdout
         if len(output.strip()) == 0:
@@ -255,13 +221,11 @@ class Repository:
         commit, date_time = output[0][1:], f"{output[1]} {output[2]}"
         return commit, date_time
 
-    @disable_dot_git
     @change_dirs
     def get_commit_date(self, commit):
         result = run_command(["git", "show", "-s", "--format=%ci", commit])
         return " ".join(result.stdout.split(" ")[:2])
 
-    @disable_dot_git
     @change_dirs
     def _get_remote(self):
         """
@@ -272,12 +236,12 @@ class Repository:
         result = result[result.find("github.com/"):].strip().strip(".git")
         return result
 
+
 class Github:
 
     def repository(self, link=None, directory=None):
         return Repository(link, directory)
 
-    @disable_dot_git
     def create_repository(self, repository, directory=None, public=False):
         reach = "private"
         if public:
